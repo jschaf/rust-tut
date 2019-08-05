@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct KvStore {
     map: HashMap<String, String>,
 }
@@ -27,7 +28,7 @@ impl KvStore {
 
     /// Returns a clone of the value corresponding to the key.
     pub fn get(&self, key: String) -> Option<String> {
-        self.map.get(key.as_str()).map(|s| s.clone())
+        self.map.get(key.as_str()).cloned()
     }
 
     /// Inserts a key-value pair into the map.
