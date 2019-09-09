@@ -1,7 +1,11 @@
-use clap::{App, AppSettings, Arg, SubCommand};
-use kvs::KvStore;
+use std::{env, process};
 
-fn main() {
+use clap::{App, AppSettings, Arg, SubCommand};
+
+use kvs::{KvStore, KvsError};
+
+fn main() -> Result<(), KvsError> {
+    eprintln!("!! main");
     let matches = App::new("kvs")
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -42,20 +46,48 @@ fn main() {
         )
         .get_matches();
 
-    let mut store = KvStore::new();
-
-    if matches.is_present("version") {
-        println!(env!("CARGO_PKG_VERSION"));
-        std::process::exit(0);
-    } else if let Some(matches) = matches.subcommand_matches("get") {
-        let key = matches.value_of("KEY").expect("KEY must be set");
-        store.get(String::from(key));
-    } else if let Some(matches) = matches.subcommand_matches("set") {
-        let key = matches.value_of("KEY").expect("KEY must be set");
-        let value = matches.value_of("VALUE").expect("VALUE must be set");
-        store.set(String::from(key), String::from(value));
-    } else if let Some(matches) = matches.subcommand_matches("rm") {
-        let key = matches.value_of("KEY").expect("KEY must be set");
-        store.remove(String::from(key));
+    match matches.subcommand() {
+        ("", None) => {
+            if matches.is_present("version") {
+                println!(env!("CARGO_PKG_VERSION"));
+            }
+        }
+        ("version", Some(_)) => {
+            println!(env!("CARGO_PKG_VERSION"));
+        }
+        ("get", Some(matches)) => {
+            let store = KvStore::open(env::current_dir()?)?;
+            let key = matches.value_of("KEY").expect("KEY must be set");
+            match store.get(String::from(key))? {
+                None => println!("Key not found"),
+                Some(val) => {
+                    eprintln!("GOT KEY");
+                    eprintln!("{}", val);
+                    println!("{}", val);
+                }
+            };
+        }
+        ("set", Some(matches)) => {
+            let mut store = KvStore::open(env::current_dir()?)?;
+            let key = matches.value_of("KEY").expect("KEY must be set");
+            let value = matches.value_of("VALUE").expect("VALUE must be set");
+            store.set(String::from(key), String::from(value))?;
+        }
+        ("rm", Some(matches)) => {
+            eprintln!("# Removing key");
+            let key = matches.value_of("KEY").expect("KEY must be set");
+            let mut store = KvStore::open(env::current_dir()?)?;
+            match store.remove(String::from(key)) {
+                Ok(()) => {}
+                Err(KvsError::KeyNotFound) => {
+                    println!("Key not found");
+                    //                    process::exit(1);
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        _ => {}
     }
+
+    Ok(())
 }
