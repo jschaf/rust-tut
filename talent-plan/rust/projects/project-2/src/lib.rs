@@ -6,3 +6,6 @@ pub use kv::KvStore;
 
 mod error;
 mod kv;
+
+pub mod flags;
+pub mod protocol;

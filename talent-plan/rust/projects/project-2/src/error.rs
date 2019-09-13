@@ -13,6 +13,9 @@ pub enum KvsError {
     /// Removing non-existent key error
     #[fail(display = "Key not found")]
     KeyNotFound,
+    /// If parsing the protocol fails.
+    #[fail(display = "{}", _0)]
+    Protocol(String),
     /// Unexpected command type error.
     /// It indicated a corrupted log or a program bug.
     #[fail(display = "Unexpected command type")]
